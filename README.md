@@ -7,7 +7,7 @@ A lightweight tool for syncing Call of Duty: Black Ops III Steam Workshop mods a
 HOW TO USE
 ------------------------------------------------------------
 
-1. Launch the application (ResurgeSteamWorkshopSync.exe).
+1. Launch the application (ResurgeSyncTool.exe).
 
 2. The tool will automatically attempt to detect:
    - Call of Duty Black Ops III game folder
