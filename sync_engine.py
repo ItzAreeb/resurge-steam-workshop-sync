@@ -1,6 +1,5 @@
 import os
 import json
-import shutil
 from pathlib import Path
 
 
@@ -8,9 +7,6 @@ class BO3SyncEngine:
     def __init__(self, logger=print):
         self.log = logger
 
-    # -----------------------------
-    # Determine mod or map
-    # -----------------------------
     def determine_type(self, workshop_data):
         title = str(workshop_data.get("Title", "")).lower()
         folder_name = str(workshop_data.get("FolderName", "")).lower()
@@ -19,12 +15,7 @@ class BO3SyncEngine:
         combined = f"{title} {folder_name} {description}"
 
         mod_keywords = [
-            "mod",
-            "weapon pack",
-            "hud",
-            "gameplay",
-            "menu",
-            "custom weapons"
+            "mod", "weapon pack", "hud", "gameplay", "menu", "custom weapons"
         ]
 
         for keyword in mod_keywords:
@@ -34,22 +25,62 @@ class BO3SyncEngine:
         return "usermaps"
 
     # -----------------------------
-    # Core sync function
+    # DELETE FOLDER CLEANLY
+    # -----------------------------
+    def wipe_folder(self, path: Path):
+        if path.exists():
+            for item in path.iterdir():
+                if item.is_dir() and not item.is_symlink():
+                    for sub in item.rglob("*"):
+                        try:
+                            if sub.is_file() or sub.is_symlink():
+                                sub.unlink()
+                        except:
+                            pass
+                    try:
+                        item.rmdir()
+                    except:
+                        pass
+                else:
+                    try:
+                        item.unlink()
+                    except:
+                        pass
+
+    # -----------------------------
+    # CREATE SYMLINK
+    # -----------------------------
+    def link_zone(self, steam_folder: Path, zone_folder: Path):
+        if zone_folder.exists() or zone_folder.is_symlink():
+            try:
+                zone_folder.unlink()
+            except:
+                pass
+
+        os.symlink(steam_folder, zone_folder, target_is_directory=True)
+
+    # -----------------------------
+    # CORE SYNC
     # -----------------------------
     def sync(self, game_path: Path, workshop_path: Path):
+
         if not game_path.exists():
             raise ValueError("Game path invalid")
 
         if not workshop_path.exists():
             raise ValueError("Workshop path invalid")
 
-        self.log("Starting sync...")
+        self.log("Starting SYMLINK sync...")
 
         mods_folder = game_path / "mods"
         usermaps_folder = game_path / "usermaps"
 
         mods_folder.mkdir(exist_ok=True)
         usermaps_folder.mkdir(exist_ok=True)
+
+        # 🔥 WIPE OLD RESURGE STRUCTURE FIRST
+        self.wipe_folder(mods_folder)
+        self.wipe_folder(usermaps_folder)
 
         workshop_items = [i for i in workshop_path.iterdir() if i.is_dir()]
 
@@ -60,7 +91,7 @@ class BO3SyncEngine:
                 json_path = item_folder / "workshop.json"
 
                 if not json_path.exists():
-                    self.log(f"Skip {item_folder.name} (no workshop.json)")
+                    self.log(f"Skip {item_folder.name}")
                     continue
 
                 with open(json_path, "r", encoding="utf-8") as f:
@@ -68,7 +99,6 @@ class BO3SyncEngine:
 
                 folder_name = data.get("FolderName")
                 if not folder_name:
-                    self.log(f"Skip {item_folder.name} (no FolderName)")
                     continue
 
                 content_type = self.determine_type(data)
@@ -78,28 +108,16 @@ class BO3SyncEngine:
                 final_folder = base / folder_name
                 zone_folder = final_folder / "zone"
 
-                zone_folder.mkdir(parents=True, exist_ok=True)
+                final_folder.mkdir(parents=True, exist_ok=True)
 
-                # copy everything into zone
-                for content in item_folder.iterdir():
-                    dst = zone_folder / content.name
+                # 🔥 CREATE SYMBOLIC LINK INSTEAD OF COPYING
+                self.link_zone(item_folder, zone_folder)
 
-                    if dst.exists():
-                        if dst.is_dir():
-                            shutil.rmtree(dst)
-                        else:
-                            dst.unlink()
-
-                    if content.is_dir():
-                        shutil.copytree(content, dst)
-                    else:
-                        shutil.copy2(content, dst)
-
-                self.log(f"Synced {folder_name} -> {content_type}")
+                self.log(f"Linked {folder_name} -> {content_type}")
                 total += 1
 
             except Exception as e:
                 self.log(f"Error {item_folder.name}: {e}")
 
-        self.log(f"Done. {total} items synced.")
+        self.log(f"Done. {total} items linked.")
         return total
