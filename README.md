@@ -38,7 +38,7 @@ FEATURES
 REQUIREMENTS
 ------------------------------------------------------------
 
-- Windows
+- Windows and must run exe as ADMINISTRATOR
 - Call of Duty: Black Ops III installed via Steam
 - Steam Workshop content downloaded (AppID: 311210)
 
