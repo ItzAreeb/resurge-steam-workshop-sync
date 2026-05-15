@@ -109,10 +109,7 @@ class BO3SyncEngine:
                 zone_folder = final_folder / "zone"
 
                 final_folder.mkdir(parents=True, exist_ok=True)
-
-                # 🔥 CREATE SYMBOLIC LINK INSTEAD OF COPYING
                 self.link_zone(item_folder, zone_folder)
-
                 self.log(f"Linked {folder_name} -> {content_type}")
                 total += 1
 
