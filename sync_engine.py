@@ -8,21 +8,10 @@ class BO3SyncEngine:
         self.log = logger
 
     def determine_type(self, workshop_data):
-        title = str(workshop_data.get("Title", "")).lower()
         folder_name = str(workshop_data.get("FolderName", "")).lower()
-        description = str(workshop_data.get("Description", "")).lower()
-
-        combined = f"{title} {folder_name} {description}"
-
-        mod_keywords = [
-            "mod", "weapon pack", "hud", "gameplay", "menu", "custom weapons"
-        ]
-
-        for keyword in mod_keywords:
-            if keyword in combined:
-                return "mods"
-
-        return "usermaps"
+        if folder_name.startswith("zm_"):
+            return "usermaps"
+        return "mods"
 
     # -----------------------------
     # DELETE FOLDER CLEANLY
